@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fafaf7;
+  --foreground: #0a0a0a;
+  --muted: #6b6b6b;
+  --border: rgba(0, 0, 0, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Rainbow gradient bar at very top */
+.rainbow-bar {
+  height: 4px;
+  background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899);
+}
+
+/* Serif heading font */
+.font-serif {
+  font-family: 'Times New Roman', Times, Georgia, serif;
+}
+
+/* Dot Pattern Background */
+.dot-pattern {
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.35) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 0, 0, 0.1);
+  color: black;
+}
+
+/* Button styles */
+.btn-primary {
+  background: #0a0a0a;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #333;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #0a0a0a;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
