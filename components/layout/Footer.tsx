@@ -18,21 +18,9 @@ export function Footer() {
                     </Link>
 
                     <p className="text-sm text-[var(--muted)] mb-8 font-medium">
-                        © 2025 Cloakr — Built for the Bitcoin x Privacy Hackathon
+                        © 2026 Cloakr — Built for the Bitcoin x Privacy Hackathon
                     </p>
 
-                    {/* Links */}
-                    <div className="flex flex-wrap justify-center gap-4 text-sm font-bold uppercase">
-                        <Link href="#" className="px-5 py-3 border-3 border-[var(--foreground)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent)] transition-colors">
-                            Docs
-                        </Link>
-                        <Link href="https://github.com" target="_blank" className="px-5 py-3 border-3 border-[var(--foreground)] shadow-[var(--shadow-sm)] hover:bg-[var(--highlight)] transition-colors">
-                            GitHub
-                        </Link>
-                        <Link href="https://t.me/+-5zNW47GSdQ1ZDkx" target="_blank" className="px-5 py-3 border-3 border-[var(--foreground)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent)] transition-colors">
-                            Telegram
-                        </Link>
-                    </div>
                 </div>
             </div>
         </footer>
