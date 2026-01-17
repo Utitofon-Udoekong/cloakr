@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchTransaction, TransactionData, CHAINS, CHAIN_CATEGORIES, getChainById } from '@/lib/chains';
+import { useVerifierContract } from '@/lib/contract';
+import { useStarknet } from '@/lib/starknet';
 import Link from 'next/link';
 
 // Icons
@@ -44,6 +46,9 @@ export default function GenerateProofPage() {
 
 function GenerateProofContent() {
     const searchParams = useSearchParams();
+    const { isConnected, connectWallet } = useStarknet();
+    const { createProof, isReady, getProofCount } = useVerifierContract();
+
     const [step, setStep] = useState<Step>('input');
     const [txid, setTxid] = useState('');
     const [selectedChain, setSelectedChain] = useState<string>('ethereum');
@@ -52,6 +57,7 @@ function GenerateProofContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [proofId, setProofId] = useState<string | null>(null);
+    const [generationError, setGenerationError] = useState('');
 
     const selectedChainConfig = getChainById(selectedChain);
 
@@ -99,16 +105,53 @@ function GenerateProofContent() {
         }
     };
 
-    // Generate the proof
+    // Generate the proof - now uses real contract!
     const handleGenerateProof = async () => {
+        if (!transaction) return;
+
         setStep('generating');
+        setGenerationError('');
 
-        // Simulate proof generation
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        try {
+            // Check if wallet connected and contract ready
+            if (!isConnected) {
+                setGenerationError('Please connect your wallet first');
+                setStep('confirm');
+                return;
+            }
 
-        const mockProofId = `proof_${Date.now().toString(36)}`;
-        setProofId(mockProofId);
-        setStep('complete');
+            if (!isReady) {
+                setGenerationError('Contract not ready. Please try again.');
+                setStep('confirm');
+                return;
+            }
+
+            // Parse amount from transaction (remove currency suffix)
+            const amountStr = transaction.amount.split(' ')[0];
+            const amount = Math.floor(parseFloat(amountStr) * 1e8); // Convert to satoshis/wei
+
+            // Create proof on-chain
+            const txHash = await createProof({
+                btcTxid: transaction.txid,
+                minAmount: amount,
+                recipientHash: transaction.to[0] || '0x0',
+            });
+
+            if (!txHash) {
+                throw new Error('Failed to create proof');
+            }
+
+            // Get the proof count to determine proof ID
+            const count = await getProofCount();
+            const proofIdNum = count.toString();
+
+            setProofId(proofIdNum);
+            setStep('complete');
+        } catch (err: unknown) {
+            console.error('Proof generation error:', err);
+            setGenerationError(err instanceof Error ? err.message : 'Failed to generate proof');
+            setStep('confirm');
+        }
     };
 
     // Truncate hash for display
@@ -298,6 +341,26 @@ function GenerateProofContent() {
                             )}
                         </div>
 
+                        {/* Error message */}
+                        {generationError && (
+                            <div className="p-4 bg-red-100 border-2 border-red-500 mb-4">
+                                <p className="text-red-600 text-sm font-medium">{generationError}</p>
+                            </div>
+                        )}
+
+                        {/* Wallet connection prompt */}
+                        {!isConnected && (
+                            <div className="p-4 bg-yellow-100 border-2 border-[#0a0a0a] mb-4">
+                                <p className="text-sm font-medium mb-2">Connect your wallet to generate a proof on Starknet</p>
+                                <button
+                                    onClick={connectWallet}
+                                    className="btn-primary py-2 px-4 text-sm"
+                                >
+                                    Connect Wallet
+                                </button>
+                            </div>
+                        )}
+
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setStep('input')}
@@ -307,9 +370,10 @@ function GenerateProofContent() {
                             </button>
                             <button
                                 onClick={handleGenerateProof}
-                                className="btn-primary flex-1"
+                                disabled={!isConnected}
+                                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Generate Proof
+                                {isConnected ? 'Generate Proof' : 'Connect Wallet First'}
                             </button>
                         </div>
                     </div>
