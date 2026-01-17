@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useStarknet, truncateStarknetAddress } from '@/lib/starknet';
 
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { address, isConnected, isConnecting, connectWallet, disconnectWallet } = useStarknet();
 
     const closeMobileMenu = () => {
         setMobileMenuOpen(false);
@@ -37,7 +39,7 @@ export function Header() {
                         <span className="text-lg font-extrabold uppercase tracking-tight">Cloakr</span>
                     </Link>
 
-                    {/* Center Navigation - Updated links */}
+                    {/* Center Navigation */}
                     <div className="hidden md:flex items-center gap-1 text-sm font-semibold uppercase tracking-wide">
                         <Link href="#how-it-works" className="px-4 py-2 hover:bg-[#fde047] transition-all border-2 border-transparent hover:border-[#0a0a0a]">
                             How it Works
@@ -47,8 +49,9 @@ export function Header() {
                         </Link>
                     </div>
 
-                    {/* Right side buttons */}
+                    {/* Right side - Single wallet button */}
                     <div className="flex items-center gap-3">
+                        {/* Mobile menu toggle */}
                         <button
                             onClick={() => setMobileMenuOpen(true)}
                             className="md:hidden w-10 h-10 border-3 border-[#0a0a0a] flex items-center justify-center shadow-[2px_2px_0px_#0a0a0a] bg-[#fafaf7]"
@@ -59,9 +62,24 @@ export function Header() {
                             </svg>
                         </button>
 
-                        <button className="btn-primary text-sm py-2.5 px-5 hidden md:block">
-                            Get Started
-                        </button>
+                        {/* Single CTA button */}
+                        {isConnected ? (
+                            <button
+                                onClick={disconnectWallet}
+                                className="hidden md:flex items-center gap-2 px-4 py-2 border-3 border-[#0a0a0a] bg-green-400 shadow-[2px_2px_0px_#0a0a0a] text-sm font-bold uppercase hover:bg-green-300 transition-colors"
+                                title="Click to disconnect"
+                            >
+                                {truncateStarknetAddress(address!)}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={connectWallet}
+                                disabled={isConnecting}
+                                className="hidden md:flex items-center gap-2 px-4 py-2 border-3 border-[#0a0a0a] bg-[#f97316] shadow-[2px_2px_0px_#0a0a0a] text-sm font-bold uppercase hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#0a0a0a] transition-all disabled:opacity-50"
+                            >
+                                {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                            </button>
+                        )}
                     </div>
                 </nav>
             </header>
@@ -92,22 +110,36 @@ export function Header() {
                         <Link
                             href="#how-it-works"
                             onClick={closeMobileMenu}
-                            className="px-4 py-4 border-3 border-[#0a0a0a] font-bold uppercase shadow-[3px_3px_0px_#0a0a0a] hover:bg-[#fde047] transition-colors"
+                            className="px-4 py-3 border-3 border-[#0a0a0a] font-bold uppercase shadow-[3px_3px_0px_#0a0a0a] hover:bg-[#fde047] transition-colors"
                         >
                             How it Works
                         </Link>
                         <Link
                             href="#about"
                             onClick={closeMobileMenu}
-                            className="px-4 py-4 border-3 border-[#0a0a0a] font-bold uppercase shadow-[3px_3px_0px_#0a0a0a] hover:bg-[#fde047] transition-colors"
+                            className="px-4 py-3 border-3 border-[#0a0a0a] font-bold uppercase shadow-[3px_3px_0px_#0a0a0a] hover:bg-[#fde047] transition-colors"
                         >
                             About
                         </Link>
                     </nav>
 
-                    <button className="btn-primary w-full mt-6">
-                        Get Started
-                    </button>
+                    {/* Mobile wallet button */}
+                    {isConnected ? (
+                        <button
+                            onClick={() => { disconnectWallet(); closeMobileMenu(); }}
+                            className="w-full py-3 border-3 border-[#0a0a0a] bg-green-400 font-bold uppercase shadow-[3px_3px_0px_#0a0a0a]"
+                        >
+                            {truncateStarknetAddress(address!)} (Disconnect)
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => { connectWallet(); closeMobileMenu(); }}
+                            disabled={isConnecting}
+                            className="btn-primary w-full py-3"
+                        >
+                            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                        </button>
+                    )}
                 </div>
             </div>
         </>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 // SVG Icons
 const LockIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
@@ -32,13 +33,12 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
+  const router = useRouter();
+
   const handleVerify = () => {
     if (txInput.trim()) {
-      setIsValidating(true);
-      setTimeout(() => {
-        setIsValidating(false);
-        alert(`Transaction verified: ${txInput}`);
-      }, 1500);
+      // Navigate to generate page with the txid
+      router.push(`/generate?txid=${encodeURIComponent(txInput.trim())}`);
     }
   };
 
@@ -153,12 +153,12 @@ export default function Home() {
                 Built for the Bitcoin x Privacy Hackathon on Starknet.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="btn-primary">
+                <Link href="/generate" className="btn-primary text-center">
                   Get Started
-                </button>
-                <button className="btn-outline">
+                </Link>
+                <Link href="#how-it-works" className="btn-outline text-center">
                   Learn More
-                </button>
+                </Link>
               </div>
             </div>
           </div>
