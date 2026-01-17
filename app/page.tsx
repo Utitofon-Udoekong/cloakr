@@ -56,13 +56,13 @@ export default function Home() {
               </h1>
 
               <p className="text-[#6b6b6b] text-lg mb-8 max-w-md">
-                Generate zero-knowledge proofs for Bitcoin transactions. Verify payments without exposing your wallet address.
+                Generate zero-knowledge proofs for blockchain transactions. Verify payments without exposing your wallet address.
               </p>
 
               {/* Input Field */}
               <div className="neo-card p-5 max-w-lg">
                 <label className="block text-sm font-bold uppercase mb-3 tracking-wide">
-                  Enter Bitcoin Transaction ID
+                  Enter Transaction Hash
                 </label>
                 <div className="flex gap-3">
                   <input
@@ -105,7 +105,7 @@ export default function Home() {
               How it works
             </h2>
             <p className="text-[#6b6b6b] max-w-lg mx-auto">
-              Three simple steps to prove any Bitcoin payment privately
+              Three simple steps to prove any blockchain payment privately
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export default function Home() {
                 <span className="text-2xl font-black">1</span>
               </div>
               <h3 className="font-bold uppercase mb-2">Enter Transaction</h3>
-              <p className="text-sm text-[#6b6b6b]">Paste your Bitcoin transaction ID</p>
+              <p className="text-sm text-[#6b6b6b]">Paste your transaction hash (ETH, BTC, SOL, etc.)</p>
             </div>
 
             <div className="text-center animate-on-scroll animate-delay-2">
@@ -163,7 +163,7 @@ export default function Home() {
               </h2>
               <p className="text-[#6b6b6b] mb-8">
                 Generate your first zero-knowledge payment proof today.
-                Built for the Bitcoin x Privacy Hackathon on Starknet.
+                Built for private multi-chain verification on Starknet.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/generate" className="btn-primary text-center">

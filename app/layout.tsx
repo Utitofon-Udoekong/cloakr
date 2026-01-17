@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Cloakr | Private Proof of Payment",
-  description: "Prove Bitcoin payments without revealing your wallet. ZK-powered privacy on Starknet.",
-  keywords: ["Bitcoin", "Privacy", "ZK", "Zero Knowledge", "Starknet", "Proof of Payment"],
+  description: "Prove blockchain payments without revealing your wallet. ZK-powered privacy on Starknet.",
+  keywords: ["Blockchain", "Bitcoin", "Ethereum", "Privacy", "ZK", "Zero Knowledge", "Starknet", "Proof of Payment"],
 };
 
 export default function RootLayout({
