@@ -83,9 +83,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right side - Simple dot pattern */}
+            {/* Right side - Abstract Illustration */}
             <div className="hidden lg:block animate-on-scroll animate-delay-2">
-              <div className="dot-pattern w-full h-72 border-3 border-[#0a0a0a]"></div>
+              <div className="relative w-full h-80 border-3 border-[#0a0a0a] overflow-hidden shadow-[var(--shadow)]">
+                <img
+                  src="/hero-illustration.png"
+                  alt="Privacy Illustration"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -136,10 +142,17 @@ export default function Home() {
       <section className="py-20 border-t-[3px] border-[#0a0a0a]" id="about">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left - dot pattern */}
-            <div className="dot-pattern h-64 border-3 border-[#0a0a0a] hidden lg:flex items-center justify-center">
-              <div className="icon-box w-24 h-24 flex items-center justify-center">
-                <LockIcon className="w-12 h-12" />
+            {/* Left - illustration */}
+            <div className="relative h-64 border-3 border-[#0a0a0a] hidden lg:block overflow-hidden shadow-[var(--shadow)]">
+              <img
+                src="/hero-illustration.png"
+                alt="Privacy Illustration"
+                className="w-full h-full object-cover opacity-80"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="icon-box w-24 h-24 flex items-center justify-center bg-[#fafaf7]">
+                  <LockIcon className="w-12 h-12" />
+                </div>
               </div>
             </div>
 

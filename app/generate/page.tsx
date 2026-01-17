@@ -391,7 +391,7 @@ function GenerateProofContent() {
                 )}
 
                 {/* Step: Complete */}
-                {step === 'complete' && (
+                {step === 'complete' && transaction && (
                     <div className="neo-card p-8 text-center">
                         <div className="icon-box w-20 h-20 mx-auto flex items-center justify-center mb-6 bg-green-400">
                             <CheckIcon />
@@ -401,19 +401,33 @@ function GenerateProofContent() {
                             Your payment proof has been created and stored on Starknet.
                         </p>
 
-                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a] mb-6">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Proof ID</span>
-                            <p className="font-mono text-lg mt-1">{proofId}</p>
+                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a] mb-4">
+                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Starknet Transaction</span>
+                            <p className="font-mono text-sm mt-1">{truncateHash(proofId || '')}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a] text-left">
+                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Amount Proved</span>
+                                <p className="font-bold mt-1">{transaction.amount}</p>
+                            </div>
+                            <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a] text-left">
+                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Source Chain</span>
+                                <p className="font-bold mt-1">{transaction.chainConfig.name}</p>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-4">
                             <button
-                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}`)}
+                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}`)}
                                 className="btn-primary"
                             >
                                 Copy Shareable Link
                             </button>
-                            <Link href={`/proof/${proofId}`} className="btn-outline text-center">
+                            <Link
+                                href={`/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}`}
+                                className="btn-outline text-center"
+                            >
                                 View Proof
                             </Link>
                             <Link href="/" className="text-sm font-semibold uppercase text-[#6b6b6b] hover:text-[#0a0a0a]">

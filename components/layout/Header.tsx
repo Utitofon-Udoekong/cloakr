@@ -31,10 +31,12 @@ export function Header() {
                 <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between border-b-[3px] border-[#0a0a0a]">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-9 h-9 border-3 border-[#0a0a0a] bg-[#f97316] flex items-center justify-center shadow-[2px_2px_0px_#0a0a0a]">
-                            <svg className="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
+                        <div className="w-9 h-9 border-3 border-[#0a0a0a] overflow-hidden flex items-center justify-center shadow-[2px_2px_0px_#0a0a0a]">
+                            <img
+                                src="/logo.png"
+                                alt="Cloakr Logo"
+                                className="w-full h-full object-cover"
+                            />
                         </div>
                         <span className="text-lg font-extrabold uppercase tracking-tight">Cloakr</span>
                     </Link>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getChainById } from '@/lib/chains';
 
 // Icons
 const ArrowLeftIcon = () => (
@@ -35,16 +36,31 @@ const truncateHash = (hash: string): string => {
     return `${hash.slice(0, 12)}...${hash.slice(-10)}`;
 };
 
+// Wrap in Suspense for useSearchParams
 export default function ProofPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#fafaf7] flex items-center justify-center"><p>Loading...</p></div>}>
+            <ProofPageContent />
+        </Suspense>
+    );
+}
+
+function ProofPageContent() {
     const params = useParams();
+    const searchParams = useSearchParams();
+
     const proofId = params.id as string;
+    const chainId = searchParams.get('chain');
+    const amount = searchParams.get('amount');
+    const sourceTxid = searchParams.get('txid');
+
     const [copied, setCopied] = useState(false);
 
-    // Determine if this is a Starknet transaction hash (starts with 0x)
-    const isStarknetTx = proofId?.startsWith('0x');
-    const explorerUrl = isStarknetTx
-        ? `https://sepolia.starkscan.co/tx/${proofId}`
-        : `https://etherscan.io/tx/${proofId}`;
+    // Get chain config
+    const chainConfig = chainId ? getChainById(chainId) : null;
+
+    // Starknet explorer URL
+    const starknetExplorerUrl = `https://sepolia.starkscan.co/tx/${proofId}`;
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(window.location.href);
@@ -68,33 +84,79 @@ export default function ProofPage() {
                             <CheckIcon />
                         </div>
                         <div>
-                            <h1 className="font-serif text-3xl">Proof Submitted</h1>
-                            <p className="text-[#6b6b6b] text-sm">Your proof has been submitted to Starknet Sepolia</p>
+                            <h1 className="font-serif text-3xl">Payment Verified</h1>
+                            <p className="text-[#6b6b6b] text-sm">This proof has been stored on Starknet</p>
                         </div>
                     </div>
 
                     <div className="grid gap-4">
-                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Transaction Hash</span>
-                            <p className="font-mono text-sm mt-1 break-all">{proofId}</p>
-                        </div>
-
-                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Status</span>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <p className="font-bold text-green-600">Submitted - Pending Confirmation</p>
+                        {/* What was proved */}
+                        {amount && (
+                            <div className="p-4 bg-green-100 border-2 border-green-500">
+                                <span className="text-xs font-semibold uppercase text-green-700">Amount Proved</span>
+                                <p className="font-bold text-2xl mt-1 text-green-800">{decodeURIComponent(amount)}</p>
                             </div>
+                        )}
+
+                        {/* Source chain info */}
+                        {chainConfig && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
+                                    <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Source Chain</span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div
+                                            className="w-4 h-4 rounded-full border-2 border-[#0a0a0a]"
+                                            style={{ backgroundColor: chainConfig.color }}
+                                        />
+                                        <p className="font-bold">{chainConfig.name}</p>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
+                                    <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Status</span>
+                                    <p className="font-bold text-lg mt-1 text-green-600">Verified ✓</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Source transaction */}
+                        {sourceTxid && (
+                            <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Source Transaction</span>
+                                    {chainConfig?.explorerUrl && (
+                                        <a
+                                            href={`${chainConfig.explorerUrl}/tx/${decodeURIComponent(sourceTxid)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-[#f97316] hover:underline flex items-center gap-1"
+                                        >
+                                            View <ExternalLinkIcon />
+                                        </a>
+                                    )}
+                                </div>
+                                <p className="font-mono text-xs mt-1 break-all">{truncateHash(decodeURIComponent(sourceTxid))}</p>
+                            </div>
+                        )}
+
+                        {/* Starknet proof transaction */}
+                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Starknet Proof Transaction</span>
+                                <a
+                                    href={starknetExplorerUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-[#f97316] hover:underline flex items-center gap-1"
+                                >
+                                    View <ExternalLinkIcon />
+                                </a>
+                            </div>
+                            <p className="font-mono text-xs mt-1 break-all">{truncateHash(proofId)}</p>
                         </div>
 
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Network</span>
+                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Proof Network</span>
                             <p className="font-bold mt-1">Starknet Sepolia</p>
-                        </div>
-
-                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Created</span>
-                            <p className="text-sm mt-1">{new Date().toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -109,23 +171,23 @@ export default function ProofPage() {
                         {copied ? 'Copied!' : 'Copy Link'}
                     </button>
                     <a
-                        href={explorerUrl}
+                        href={starknetExplorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn-outline flex items-center justify-center gap-2 px-6"
                     >
                         <ExternalLinkIcon />
-                        View on Explorer
+                        View on Starkscan
                     </a>
                 </div>
 
                 {/* Info box */}
                 <div className="p-6 border-2 border-dashed border-[#0a0a0a] bg-[#fef9c3]">
-                    <h3 className="font-bold uppercase text-sm mb-2">What&apos;s Next?</h3>
+                    <h3 className="font-bold uppercase text-sm mb-2">What is this?</h3>
                     <p className="text-sm text-[#6b6b6b]">
-                        Your payment proof has been submitted to the Starknet network. Once confirmed,
-                        you can share this link with anyone to prove your payment was made without
-                        revealing your wallet address.
+                        This is a cryptographic proof of a blockchain payment. It verifies that a specific
+                        payment was made without revealing the sender&apos;s wallet address. The proof is
+                        permanently stored on Starknet.
                     </p>
                 </div>
 
