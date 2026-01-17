@@ -42,7 +42,7 @@ pub mod PaymentProofVerifier {
         #[key]
         pub proof_id: felt252,
         pub creator: ContractAddress,
-        pub btc_txid: felt252,
+        pub source_txid: felt252,
     }
 
     #[constructor]
@@ -65,7 +65,7 @@ pub mod PaymentProofVerifier {
             // Create proof
             let proof = PaymentProof {
                 id: proof_id,
-                btc_txid: input.btc_txid,
+                source_txid: input.source_txid,
                 min_amount: input.min_amount,
                 recipient_hash: input.recipient_hash,
                 created_at: timestamp,
@@ -81,7 +81,7 @@ pub mod PaymentProofVerifier {
             self.emit(ProofCreated {
                 proof_id,
                 creator: caller,
-                btc_txid: input.btc_txid,
+                source_txid: input.source_txid,
             });
             
             proof_id

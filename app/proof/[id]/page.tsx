@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 // Icons
@@ -17,60 +17,40 @@ const CheckIcon = () => (
     </svg>
 );
 
-const ShareIcon = () => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-    </svg>
-);
-
 const CopyIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
     </svg>
 );
 
-interface MockProof {
-    id: string;
-    btcTxid: string;
-    amount: string;
-    recipient: string;
-    createdAt: string;
-    isVerified: boolean;
-}
+const ExternalLinkIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+);
+
+// Truncate hash for display
+const truncateHash = (hash: string): string => {
+    if (!hash || hash.length <= 20) return hash || '';
+    return `${hash.slice(0, 12)}...${hash.slice(-10)}`;
+};
 
 export default function ProofPage() {
     const params = useParams();
     const proofId = params.id as string;
-    const [proof, setProof] = useState<MockProof | null>(null);
     const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        // Mock proof data - in real app, fetch from Starknet
-        setProof({
-            id: proofId,
-            btcTxid: '3a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef',
-            amount: '0.01500000',
-            recipient: 'bc1q...xyz789',
-            createdAt: new Date().toISOString(),
-            isVerified: true,
-        });
-    }, [proofId]);
+    // Determine if this is a Starknet transaction hash (starts with 0x)
+    const isStarknetTx = proofId?.startsWith('0x');
+    const explorerUrl = isStarknetTx
+        ? `https://sepolia.starkscan.co/tx/${proofId}`
+        : `https://etherscan.io/tx/${proofId}`;
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-
-    if (!proof) {
-        return (
-            <div className="min-h-screen bg-[#fafaf7] flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-[#6b6b6b]">Loading proof...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-[#fafaf7] py-12">
@@ -88,42 +68,39 @@ export default function ProofPage() {
                             <CheckIcon />
                         </div>
                         <div>
-                            <h1 className="font-serif text-3xl">Payment Verified</h1>
-                            <p className="text-[#6b6b6b] text-sm">This proof has been verified on Starknet</p>
+                            <h1 className="font-serif text-3xl">Proof Submitted</h1>
+                            <p className="text-[#6b6b6b] text-sm">Your proof has been submitted to Starknet Sepolia</p>
                         </div>
                     </div>
 
                     <div className="grid gap-4">
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Proof ID</span>
-                            <p className="font-mono text-sm mt-1">{proof.id}</p>
+                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Transaction Hash</span>
+                            <p className="font-mono text-sm mt-1 break-all">{proofId}</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Amount</span>
-                                <p className="font-bold text-lg mt-1">{proof.amount} BTC</p>
-                            </div>
-                            <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Status</span>
-                                <p className="font-bold text-lg mt-1 text-green-600">Verified ✓</p>
+                        <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
+                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Status</span>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <p className="font-bold text-green-600">Submitted - Pending Confirmation</p>
                             </div>
                         </div>
 
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
-                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Bitcoin Transaction</span>
-                            <p className="font-mono text-xs mt-1 break-all">{proof.btcTxid}</p>
+                            <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Network</span>
+                            <p className="font-bold mt-1">Starknet Sepolia</p>
                         </div>
 
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
                             <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Created</span>
-                            <p className="text-sm mt-1">{new Date(proof.createdAt).toLocaleString()}</p>
+                            <p className="text-sm mt-1">{new Date().toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Share buttons */}
-                <div className="flex gap-4">
+                {/* Action buttons */}
+                <div className="flex gap-4 mb-8">
                     <button
                         onClick={handleCopyLink}
                         className="btn-primary flex-1 flex items-center justify-center gap-2"
@@ -131,19 +108,35 @@ export default function ProofPage() {
                         <CopyIcon />
                         {copied ? 'Copied!' : 'Copy Link'}
                     </button>
-                    <button className="btn-outline flex items-center justify-center gap-2 px-6">
-                        <ShareIcon />
-                        Share
-                    </button>
+                    <a
+                        href={explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-outline flex items-center justify-center gap-2 px-6"
+                    >
+                        <ExternalLinkIcon />
+                        View on Explorer
+                    </a>
                 </div>
 
                 {/* Info box */}
-                <div className="mt-8 p-6 border-2 border-dashed border-[#0a0a0a] bg-[#fef9c3]">
-                    <h3 className="font-bold uppercase text-sm mb-2">What is this?</h3>
+                <div className="p-6 border-2 border-dashed border-[#0a0a0a] bg-[#fef9c3]">
+                    <h3 className="font-bold uppercase text-sm mb-2">What&apos;s Next?</h3>
                     <p className="text-sm text-[#6b6b6b]">
-                        This is a zero-knowledge proof of a Bitcoin payment. It proves that a specific payment
-                        was made without revealing the sender&apos;s wallet address. The proof is verified on Starknet.
+                        Your payment proof has been submitted to the Starknet network. Once confirmed,
+                        you can share this link with anyone to prove your payment was made without
+                        revealing your wallet address.
                     </p>
+                </div>
+
+                {/* Generate another */}
+                <div className="mt-8 text-center">
+                    <Link
+                        href="/generate"
+                        className="text-sm font-semibold uppercase text-[#6b6b6b] hover:text-[#f97316] transition-colors"
+                    >
+                        Generate Another Proof →
+                    </Link>
                 </div>
             </div>
         </div>

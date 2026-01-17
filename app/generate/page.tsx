@@ -132,7 +132,7 @@ function GenerateProofContent() {
 
             // Create proof on-chain
             const txHash = await createProof({
-                btcTxid: transaction.txid,
+                sourceTxid: transaction.txid,
                 minAmount: amount,
                 recipientHash: transaction.to[0] || '0x0',
             });
@@ -141,11 +141,9 @@ function GenerateProofContent() {
                 throw new Error('Failed to create proof');
             }
 
-            // Get the proof count to determine proof ID
-            const count = await getProofCount();
-            const proofIdNum = count.toString();
-
-            setProofId(proofIdNum);
+            // Use the transaction hash as the proof identifier
+            // The actual proof ID on-chain will be determined by the contract
+            setProofId(txHash);
             setStep('complete');
         } catch (err: unknown) {
             console.error('Proof generation error:', err);
