@@ -1,79 +1,245 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+/* ========================================
+   CLOAKR THEME - Clean Light Theme Only
+   Orange/Black/Cream neobrutalist palette
+   ======================================== */
 
 :root {
   --background: #fafaf7;
   --foreground: #0a0a0a;
   --muted: #6b6b6b;
-  --border: rgba(0, 0, 0, 0.08);
+  --accent: #f97316;
+  --accent-light: #fed7aa;
+  --highlight: #fde047;
+  --shadow: 4px 4px 0px #0a0a0a;
+  --shadow-sm: 2px 2px 0px #0a0a0a;
+  --shadow-lg: 6px 6px 0px #0a0a0a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", system-ui, sans-serif;
 }
+
+/* Import fonts */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-/* Rainbow gradient bar at very top */
-.rainbow-bar {
-  height: 4px;
-  background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899);
-}
-
-/* Serif heading font */
 .font-serif {
-  font-family: 'Times New Roman', Times, Georgia, serif;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
-/* Dot Pattern Background */
+/* Orange gradient bar */
+.rainbow-bar {
+  height: 6px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #fbbf24, #f97316);
+}
+
+/* Dot Pattern */
 .dot-pattern {
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.35) 1.5px, transparent 1.5px);
+  background-color: var(--background);
+  background-image: radial-gradient(circle, #0a0a0a 1.5px, transparent 1.5px);
   background-size: 12px 12px;
 }
 
-/* Smooth Scroll */
 html {
   scroll-behavior: smooth;
 }
 
-/* Selection */
 ::selection {
-  background: rgba(0, 0, 0, 0.1);
-  color: black;
+  background: var(--highlight);
+  color: #0a0a0a;
 }
 
-/* Button styles */
+/* ========================================
+   BUTTONS - Pure Neobrutalist
+   ======================================== */
+
 .btn-primary {
   background: #0a0a0a;
-  color: white;
-  padding: 10px 24px;
-  border-radius: 9999px;
+  color: #fafaf7;
+  padding: 14px 28px;
+  border-radius: 0;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 700;
+  border: 3px solid #0a0a0a;
+  box-shadow: var(--shadow);
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-primary:hover {
-  background: #333;
+  background: var(--accent);
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 
 .btn-outline {
-  background: transparent;
+  background: var(--background);
   color: #0a0a0a;
-  padding: 10px 24px;
-  border-radius: 9999px;
+  padding: 14px 28px;
+  border-radius: 0;
   font-size: 14px;
-  font-weight: 500;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  transition: all 0.2s;
+  font-weight: 700;
+  border: 3px solid #0a0a0a;
+  box-shadow: var(--shadow);
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-outline:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--highlight);
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========================================
+   CARDS & INPUTS
+   ======================================== */
+
+.neo-card {
+  background: #ffffff;
+  border: 3px solid #0a0a0a;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.neo-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-input {
+  background: #ffffff;
+  color: #0a0a0a;
+  border: 3px solid #0a0a0a;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  transition: all 0.15s ease;
+  border-radius: 0;
+  width: 100%;
+}
+
+.neo-input::placeholder {
+  color: var(--muted);
+}
+
+.neo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ========================================
+   ICON BOX
+   ======================================== */
+
+.icon-box {
+  background: var(--accent);
+  border: 3px solid #0a0a0a;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  color: #0a0a0a;
+}
+
+.icon-box:hover {
+  transform: scale(1.08) rotate(-3deg);
+  box-shadow: var(--shadow);
+}
+
+.icon-box-secondary {
+  background: var(--highlight);
+  border: 3px solid #0a0a0a;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  color: #0a0a0a;
+}
+
+.icon-box-secondary:hover {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow: var(--shadow);
+}
+
+/* ========================================
+   SCROLL ANIMATIONS - Working version
+   ======================================== */
+
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.animate-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.animate-delay-2 {
+  transition-delay: 0.2s;
+}
+
+.animate-delay-3 {
+  transition-delay: 0.3s;
+}
+
+.animate-delay-4 {
+  transition-delay: 0.4s;
+}
+
+/* ========================================
+   MOBILE MENU - Fixed overlay
+   ======================================== */
+
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  max-width: 85vw;
+  height: 100vh;
+  background: var(--background);
+  border-left: 3px solid #0a0a0a;
+  z-index: 999;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
 }
