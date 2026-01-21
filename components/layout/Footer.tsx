@@ -18,7 +18,7 @@ export function Footer() {
                     </Link>
 
                     <p className="text-sm text-[var(--muted)] mb-8 font-medium">
-                        © 2026 Cloakr — Built for the Bitcoin x Privacy Hackathon
+                        © 2026 Cloakr — Private Proof of Payment on Starknet
                     </p>
 
                 </div>

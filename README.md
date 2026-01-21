@@ -1,43 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cloakr
 
-## Getting Started
+**Cloakr** is a privacy-preserving payment verification platform that allows you to generate zero-knowledge (ZK) proofs for blockchain transactions. Prove you've made a payment without ever revealing your wallet address.
 
-First, run the development server:
+## 🚀 Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+In a world where blockchain transparency is a standard, privacy is often compromised. Cloakr bridges this gap by enabling users to verify their payments privately on Starknet. Our platform supports multiple chains, including Ethereum, Bitcoin, Solana, and various L2s.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Multi-Chain Support**: Generate proofs for transactions on ETH, BTC, SOL, Base, Polygon, and more.
+- **Privacy-First**: Proofs are generated using zero-knowledge principles on Starknet.
+- **Simple Sharing**: Share a unique link with anyone to prove your payment status without compromising your source wallet.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Architecture
 
-## Learn More
+Cloakr consists of:
+1. **Frontend**: A Next.js application built with Tailwind CSS.
+2. **Contracts**: Cairo-based smart contracts deployed on Starknet Sepolia.
+3. **Verification**: A robust verification system that pulls real-time transaction data across multiple networks.
 
-To learn more about Next.js, take a look at the following resources:
+## 💻 Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework**: [Next.js](https://nextjs.org/)
+- **Blockchain**: [Starknet](https://www.starknet.io/) (Cairo)
+- **RPC**: [Alchemy](https://www.alchemy.com/)
+- **State Management**: React Hooks & Context API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚦 Getting Started
 
-## Deploy on Vercel
+### Prerequisites
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [Node.js](https://nodejs.org/) (v18+)
+- [Argent X](https://www.argent.xyz/argent-x/) or [Braavos](https://braavos.app/) Wallet
+- [Starknet Foundry](https://github.com/foundry-rs/starknet-foundry) (for contract development)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Installation
 
-https://eth-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ,
-https://polygon-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ,
-https://base-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ,
-https://bnb-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ,
-https://btc-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ,
-https://solana-mainnet.g.alchemy.com/v2/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/cloakr.git
+   cd cloakr
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   Create a `.env.local` file based on `.env.example`:
+   ```bash
+   NEXT_PUBLIC_STARKNET_RPC_URL=your_starknet_rpc_url
+   NEXT_PUBLIC_VERIFIER_CONTRACT_ADDRESS=your_contract_address
+   ```
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+## 📄 License
+
+This project is licensed under the MIT License.
