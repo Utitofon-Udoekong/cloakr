@@ -4,10 +4,8 @@ import { useStarknet } from './starknet';
 import { Contract } from 'starknet';
 import { DisclosureLevel, createCommitment, storeProofSecrets, getProofSecrets } from './crypto';
 
-// ============================================
-// LEGACY ABI (backward compatibility)
-// ============================================
-const LEGACY_ABI = [
+// Full ABI from compiled contract - matches exactly what's deployed
+const VERIFIER_ABI = [
   {
     "type": "impl",
     "name": "PaymentProofVerifierImpl",
@@ -44,6 +42,14 @@ const LEGACY_ABI = [
     ]
   },
   {
+    "type": "struct",
+    "name": "core::integer::u256",
+    "members": [
+      { "name": "low", "type": "core::integer::u128" },
+      { "name": "high", "type": "core::integer::u128" }
+    ]
+  },
+  {
     "type": "interface",
     "name": "cloakr_contracts::verifier::IPaymentProofVerifier",
     "items": [
@@ -76,13 +82,7 @@ const LEGACY_ABI = [
         "state_mutability": "view"
       }
     ]
-  }
-];
-
-// ============================================
-// PRIVACY-PRESERVING ABI (ZK)
-// ============================================
-const PRIVATE_ABI = [
+  },
   {
     "type": "impl",
     "name": "PrivatePaymentVerifierImpl",
@@ -95,19 +95,6 @@ const PRIVATE_ABI = [
       { "name": "commitment", "type": "core::felt252" },
       { "name": "min_amount_threshold", "type": "core::integer::u64" },
       { "name": "disclosure_level", "type": "core::integer::u8" }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "cloakr_contracts::types::PrivatePaymentProof",
-    "members": [
-      { "name": "id", "type": "core::felt252" },
-      { "name": "commitment", "type": "core::felt252" },
-      { "name": "min_amount_threshold", "type": "core::integer::u64" },
-      { "name": "disclosure_level", "type": "core::integer::u8" },
-      { "name": "created_at", "type": "core::integer::u64" },
-      { "name": "creator", "type": "core::starknet::contract_address::ContractAddress" },
-      { "name": "is_verified", "type": "core::bool" }
     ]
   },
   {
@@ -128,6 +115,19 @@ const PRIVATE_ABI = [
       { "name": "is_valid", "type": "core::bool" },
       { "name": "meets_threshold", "type": "core::bool" },
       { "name": "disclosure_level", "type": "core::integer::u8" }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "cloakr_contracts::types::PrivatePaymentProof",
+    "members": [
+      { "name": "id", "type": "core::felt252" },
+      { "name": "commitment", "type": "core::felt252" },
+      { "name": "min_amount_threshold", "type": "core::integer::u64" },
+      { "name": "disclosure_level", "type": "core::integer::u8" },
+      { "name": "created_at", "type": "core::integer::u64" },
+      { "name": "creator", "type": "core::starknet::contract_address::ContractAddress" },
+      { "name": "is_verified", "type": "core::bool" }
     ]
   },
   {
@@ -163,17 +163,21 @@ const PRIVATE_ABI = [
         "state_mutability": "view"
       }
     ]
-  }
-];
-
-// Combined ABI for the contract
-const VERIFIER_ABI = [
-  ...LEGACY_ABI,
-  ...PRIVATE_ABI,
+  },
   {
     "type": "constructor",
     "name": "constructor",
     "inputs": [{ "name": "owner", "type": "core::starknet::contract_address::ContractAddress" }]
+  },
+  {
+    "type": "event",
+    "name": "cloakr_contracts::verifier::PaymentProofVerifier::ProofCreated",
+    "kind": "struct",
+    "members": [
+      { "name": "proof_id", "type": "core::felt252", "kind": "key" },
+      { "name": "creator", "type": "core::starknet::contract_address::ContractAddress", "kind": "data" },
+      { "name": "source_txid", "type": "core::felt252", "kind": "data" }
+    ]
   },
   {
     "type": "event",
@@ -184,6 +188,26 @@ const VERIFIER_ABI = [
       { "name": "creator", "type": "core::starknet::contract_address::ContractAddress", "kind": "data" },
       { "name": "commitment", "type": "core::felt252", "kind": "data" },
       { "name": "disclosure_level", "type": "core::integer::u8", "kind": "data" }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "cloakr_contracts::verifier::PaymentProofVerifier::CommitmentVerified",
+    "kind": "struct",
+    "members": [
+      { "name": "proof_id", "type": "core::felt252", "kind": "key" },
+      { "name": "verifier", "type": "core::starknet::contract_address::ContractAddress", "kind": "data" },
+      { "name": "is_valid", "type": "core::bool", "kind": "data" }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "cloakr_contracts::verifier::PaymentProofVerifier::Event",
+    "kind": "enum",
+    "variants": [
+      { "name": "ProofCreated", "type": "cloakr_contracts::verifier::PaymentProofVerifier::ProofCreated", "kind": "nested" },
+      { "name": "PrivateProofCreated", "type": "cloakr_contracts::verifier::PaymentProofVerifier::PrivateProofCreated", "kind": "nested" },
+      { "name": "CommitmentVerified", "type": "cloakr_contracts::verifier::PaymentProofVerifier::CommitmentVerified", "kind": "nested" }
     ]
   }
 ];
@@ -378,17 +402,18 @@ export function useVerifierContract() {
       
       console.log('Generated commitment:', commitment);
       console.log('Secret stored locally (never sent to chain)');
+      console.log('Calling contract.invoke...');
 
-      const myCall = contract.populate('create_private_proof', {
-        input: {
-          commitment: commitment,
-          min_amount_threshold: Number(amount),
-          disclosure_level: disclosureLevel,
-        }
-      });
-
-      const result = await account!.execute(myCall);
+      // Use contract.invoke instead of account.execute
+      // This should properly trigger the wallet popup
+      const result = await contract.invoke('create_private_proof', [{
+        commitment: commitment,
+        min_amount_threshold: Number(amount),
+        disclosure_level: disclosureLevel,
+      }]);
+      
       const txHash = result.transaction_hash;
+      console.log('Transaction hash:', txHash);
       
       // Use tx hash as proof ID for now (actual proof ID comes from contract)
       const proofId = txHash;

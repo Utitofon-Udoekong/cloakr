@@ -49,15 +49,25 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
 
             if (!starknet) {
                 alert('Please install ArgentX or Braavos wallet extension');
+                setIsConnecting(false);
                 return;
             }
 
             // Request connection
-            await starknet.enable({ starknetVersion: 'v5' });
+            // Request connection - try without arguments first for best compatibility
+            const addresses = await starknet.enable();
+            console.log('Wallet enabled, addresses:', addresses);
+
+            // Wait a moment for the wallet to fully initialize
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             if (starknet.isConnected && starknet.account) {
-                setAccount(starknet.account);
-                setAddress(starknet.selectedAddress || null);
+                // Cast to AccountInterface - wallet extensions provide compatible objects
+                setAccount(starknet.account as AccountInterface);
+                setAddress(starknet.selectedAddress || addresses?.[0] || null);
+                console.log('Wallet connected:', starknet.selectedAddress || addresses?.[0]);
+            } else {
+                console.warn('Wallet not connected after enable');
             }
         } catch (error) {
             console.error('Failed to connect wallet:', error);
