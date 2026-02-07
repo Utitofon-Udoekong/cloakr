@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchTransaction, TransactionData, CHAINS, CHAIN_CATEGORIES, getChainById } from '@/lib/chains';
-import { useVerifierContract } from '@/lib/contract';
+import { useVerifierContract, DisclosureLevel } from '@/lib/contract';
 import { useStarknet } from '@/lib/starknet';
 import Link from 'next/link';
 
@@ -47,7 +47,7 @@ export default function GenerateProofPage() {
 function GenerateProofContent() {
     const searchParams = useSearchParams();
     const { isConnected, connectWallet } = useStarknet();
-    const { createProof, isReady, getProofCount } = useVerifierContract();
+    const { createProof, createPrivateProof, isReady, getProofCount } = useVerifierContract();
 
     const [step, setStep] = useState<Step>('input');
     const [txid, setTxid] = useState('');
@@ -58,6 +58,8 @@ function GenerateProofContent() {
     const [error, setError] = useState('');
     const [proofId, setProofId] = useState<string | null>(null);
     const [generationError, setGenerationError] = useState('');
+    const [disclosureLevel, setDisclosureLevel] = useState<number>(DisclosureLevel.PRIVATE);
+    const [usePrivacyMode, setUsePrivacyMode] = useState(true);
 
     const selectedChainConfig = getChainById(selectedChain);
 
@@ -130,19 +132,38 @@ function GenerateProofContent() {
             const amountStr = transaction.amount.split(' ')[0];
             const amount = Math.floor(parseFloat(amountStr) * 1e8); // Convert to satoshis/wei
 
-            // Create proof on-chain
-            const txHash = await createProof({
-                sourceTxid: transaction.txid,
-                minAmount: amount,
-                recipientHash: transaction.to[0] || '0x0',
-            });
+            let txHash: string | null = null;
+
+            if (usePrivacyMode) {
+                // PRIVACY MODE: Use Pedersen commitments
+                // Secrets are generated client-side and stored locally
+                // Only the commitment hash goes on-chain!
+                const result = await createPrivateProof(
+                    BigInt(amount),
+                    transaction.to[0] || '0x0',
+                    disclosureLevel
+                );
+
+                if (!result) {
+                    throw new Error('Failed to create private proof');
+                }
+
+                txHash = result.txHash;
+                console.log('Private proof created with Pedersen commitment');
+                console.log('Your secrets are stored locally and never sent to the blockchain');
+            } else {
+                // Legacy mode (non-private)
+                txHash = await createProof({
+                    sourceTxid: transaction.txid,
+                    minAmount: amount,
+                    recipientHash: transaction.to[0] || '0x0',
+                });
+            }
 
             if (!txHash) {
                 throw new Error('Failed to create proof');
             }
 
-            // Use the transaction hash as the proof identifier
-            // The actual proof ID on-chain will be determined by the contract
             setProofId(txHash);
             setStep('complete');
         } catch (err: unknown) {
@@ -335,6 +356,70 @@ function GenerateProofContent() {
                                 <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
                                     <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Fee</span>
                                     <p className="font-mono text-sm mt-1">{transaction.fee}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Privacy Mode Toggle */}
+                        <div className="p-4 bg-[#e0f2fe] border-2 border-[#0a0a0a] mb-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <div>
+                                    <span className="font-bold text-sm">🔒 Privacy Mode</span>
+                                    <p className="text-xs text-[#6b6b6b]">Use Pedersen commitments for real ZK privacy</p>
+                                </div>
+                                <button
+                                    onClick={() => setUsePrivacyMode(!usePrivacyMode)}
+                                    className={`w-12 h-6 rounded-full border-2 border-[#0a0a0a] transition-colors relative ${usePrivacyMode ? 'bg-green-400' : 'bg-gray-200'
+                                        }`}
+                                >
+                                    <div className={`w-4 h-4 bg-white border-2 border-[#0a0a0a] rounded-full absolute top-0 transition-transform ${usePrivacyMode ? 'translate-x-6' : 'translate-x-0.5'
+                                        }`} />
+                                </button>
+                            </div>
+
+                            {usePrivacyMode && (
+                                <div className="mt-3 pt-3 border-t border-[#6b6b6b]/30">
+                                    <label className="block text-xs font-semibold uppercase text-[#6b6b6b] mb-2">
+                                        Disclosure Level
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => setDisclosureLevel(DisclosureLevel.PRIVATE)}
+                                            className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.PRIVATE
+                                                    ? 'bg-[#f97316] font-bold'
+                                                    : 'bg-white hover:bg-[#fde047]'
+                                                }`}
+                                        >
+                                            <div className="text-lg mb-1">🔐</div>
+                                            <div className="text-xs font-semibold uppercase">Private</div>
+                                            <div className="text-[10px] text-[#6b6b6b]">Proof only</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setDisclosureLevel(DisclosureLevel.AMOUNT)}
+                                            className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.AMOUNT
+                                                    ? 'bg-[#f97316] font-bold'
+                                                    : 'bg-white hover:bg-[#fde047]'
+                                                }`}
+                                        >
+                                            <div className="text-lg mb-1">💰</div>
+                                            <div className="text-xs font-semibold uppercase">Amount</div>
+                                            <div className="text-[10px] text-[#6b6b6b]">Show threshold</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setDisclosureLevel(DisclosureLevel.FULL)}
+                                            className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.FULL
+                                                    ? 'bg-[#f97316] font-bold'
+                                                    : 'bg-white hover:bg-[#fde047]'
+                                                }`}
+                                        >
+                                            <div className="text-lg mb-1">📋</div>
+                                            <div className="text-xs font-semibold uppercase">Full</div>
+                                            <div className="text-[10px] text-[#6b6b6b]">Show all</div>
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-[#6b6b6b] mt-2 italic">
+                                        ℹ️ Your secrets are stored locally and never sent to the blockchain
+                                    </p>
                                 </div>
                             )}
                         </div>
