@@ -261,14 +261,14 @@ export function useVerifierContract() {
       console.warn('Contract address not configured');
       return null;
     }
-    return new Contract(VERIFIER_ABI, CONTRACT_ADDRESS, provider);
+    return new Contract({ abi: VERIFIER_ABI, address: CONTRACT_ADDRESS, providerOrAccount: provider });
   };
 
   const getWriteContract = () => {
     if (!CONTRACT_ADDRESS || !account) {
       return null;
     }
-    return new Contract(VERIFIER_ABI, CONTRACT_ADDRESS, account);
+    return new Contract({ abi: VERIFIER_ABI, address: CONTRACT_ADDRESS, providerOrAccount: account });
   };
 
   // ============================================
