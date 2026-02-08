@@ -15,7 +15,7 @@ interface StarknetContextType {
 
 const StarknetContext = createContext<StarknetContextType | null>(null);
 
-const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_10/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ';
+const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_7';
 
 // Get the starknet window object
 declare global {

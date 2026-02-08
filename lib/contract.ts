@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useStarknet } from './starknet';
 import { Contract } from 'starknet';
 import { DisclosureLevel, createCommitment, storeProofSecrets, getProofSecrets } from './crypto';
@@ -161,6 +162,23 @@ const VERIFIER_ABI = [
         "inputs": [],
         "outputs": [{ "type": "core::integer::u256" }],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_user_proof_count",
+        "inputs": [{ "name": "user", "type": "core::starknet::contract_address::ContractAddress" }],
+        "outputs": [{ "type": "core::integer::u64" }],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "get_user_proof_at",
+        "inputs": [
+          { "name": "user", "type": "core::starknet::contract_address::ContractAddress" },
+          { "name": "index", "type": "core::integer::u64" }
+        ],
+        "outputs": [{ "type": "core::felt252" }],
+        "state_mutability": "view"
       }
     ]
   },
@@ -280,26 +298,26 @@ function stringToFelt(str: string): string {
 export function useVerifierContract() {
   const { account, provider, isConnected } = useStarknet();
 
-  const getReadContract = () => {
+  const getReadContract = useCallback(() => {
     if (!CONTRACT_ADDRESS) {
       console.warn('Contract address not configured');
       return null;
     }
     return new Contract({ abi: VERIFIER_ABI, address: CONTRACT_ADDRESS, providerOrAccount: provider });
-  };
+  }, [provider]);
 
-  const getWriteContract = () => {
+  const getWriteContract = useCallback(() => {
     if (!CONTRACT_ADDRESS || !account) {
       return null;
     }
     return new Contract({ abi: VERIFIER_ABI, address: CONTRACT_ADDRESS, providerOrAccount: account });
-  };
+  }, [account]);
 
   // ============================================
   // LEGACY FUNCTIONS
   // ============================================
 
-  const createProof = async (input: ProofInput): Promise<string | null> => {
+  const createProof = useCallback(async (input: ProofInput): Promise<string | null> => {
     const contract = getWriteContract();
     if (!contract) {
       throw new Error('Wallet not connected or contract not configured');
@@ -324,9 +342,9 @@ export function useVerifierContract() {
       console.error('Failed to create proof:', error);
       throw error;
     }
-  };
+  }, [account, getWriteContract]);
 
-  const verifyProof = async (proofId: string): Promise<boolean> => {
+  const verifyProof = useCallback(async (proofId: string): Promise<boolean> => {
     const contract = getReadContract();
     if (!contract) return false;
 
@@ -339,9 +357,9 @@ export function useVerifierContract() {
       console.error('Failed to verify proof:', error);
       return false;
     }
-  };
+  }, [getReadContract]);
 
-  const getProof = async (proofId: string): Promise<PaymentProof | null> => {
+  const getProof = useCallback(async (proofId: string): Promise<PaymentProof | null> => {
     const contract = getReadContract();
     if (!contract) return null;
 
@@ -360,9 +378,9 @@ export function useVerifierContract() {
       console.error('Failed to get proof:', error);
       return null;
     }
-  };
+  }, [getReadContract]);
 
-  const getProofCount = async (): Promise<number> => {
+  const getProofCount = useCallback(async (): Promise<number> => {
     const contract = getReadContract();
     if (!contract) return 0;
 
@@ -376,7 +394,7 @@ export function useVerifierContract() {
       console.error('Failed to get proof count:', error);
       return 0;
     }
-  };
+  }, [getReadContract]);
 
   // ============================================
   // PRIVACY-PRESERVING FUNCTIONS (ZK)
@@ -386,7 +404,7 @@ export function useVerifierContract() {
    * Create a private proof using Pedersen commitment
    * The commitment is generated CLIENT-SIDE - secrets never leave your device
    */
-  const createPrivateProof = async (
+  const createPrivateProof = useCallback(async (
     amount: bigint,
     recipientHash: string,
     disclosureLevel: number = DisclosureLevel.PRIVATE
@@ -415,8 +433,8 @@ export function useVerifierContract() {
       const txHash = result.transaction_hash;
       console.log('Transaction hash:', txHash);
       
-      // Use tx hash as proof ID for now (actual proof ID comes from contract)
-      const proofId = txHash;
+      // Use commitment as proof ID (consistent with contract)
+      const proofId = commitment;
       
       // Store secrets locally (NEVER sent to chain!)
       storeProofSecrets(proofId, {
@@ -432,12 +450,12 @@ export function useVerifierContract() {
       console.error('Failed to create private proof:', error);
       throw error;
     }
-  };
+  }, [getWriteContract]);
 
   /**
    * Verify commitment on-chain (ZK proof of knowledge)
    */
-  const verifyCommitment = async (proofId: string): Promise<VerificationResult | null> => {
+  const verifyCommitment = useCallback(async (proofId: string): Promise<VerificationResult | null> => {
     const contract = getReadContract();
     if (!contract) return null;
 
@@ -466,17 +484,23 @@ export function useVerifierContract() {
       console.error('Failed to verify commitment:', error);
       return null;
     }
-  };
+  }, [getReadContract]);
 
   /**
    * Get private proof details
    */
-  const getPrivateProof = async (proofId: string): Promise<PrivatePaymentProof | null> => {
+  const getPrivateProof = useCallback(async (proofId: string): Promise<PrivatePaymentProof | null> => {
     const contract = getReadContract();
     if (!contract) return null;
 
     try {
       const result = await contract.get_private_proof(proofId);
+      
+      // Check for zero commitment (proof not found)
+      if (result.commitment === undefined || result.commitment.toString() === '0') {
+        return null;
+      }
+
       return {
         id: result.id.toString(),
         commitment: result.commitment.toString(),
@@ -490,7 +514,61 @@ export function useVerifierContract() {
       console.error('Failed to get private proof:', error);
       return null;
     }
-  };
+  }, [getReadContract]);
+
+  /**
+   * Get all proofs for a specific user
+   */
+  const getUserProofs = useCallback(async (userAddress: string): Promise<PrivatePaymentProof[]> => {
+    const contract = getReadContract();
+    if (!contract) return [];
+
+    try {
+      // Get count
+      const countResult = await contract.get_user_proof_count(userAddress);
+      
+      // Handle potential Starknet.js return types for u64
+      let count = 0;
+      if (typeof countResult === 'bigint') {
+        count = Number(countResult); 
+      } else if (typeof countResult === 'object' && countResult !== null) {
+         // handle undefined props safely
+         count = Number((countResult as any).toString());
+      } else {
+        count = Number(countResult);
+      }
+
+      // Only log if count changes or maybe just debug log
+      // console.log(`Found ${count} proofs for user ${userAddress}`);
+
+      if (count === 0) return [];
+
+      // Fetch all proofs in parallel
+      const proofPromises = [];
+      for (let i = 0; i < count; i++) {
+        proofPromises.push((async () => {
+             try {
+                 const proofId = await contract.get_user_proof_at(userAddress, i);
+                 const idStr = proofId.toString();
+                 return await getPrivateProof(idStr);
+             } catch (e) {
+                 console.error(`Failed to fetch proof at index ${i}`, e);
+                 return null;
+             }
+        })());
+      }
+      
+      const proofs = await Promise.all(proofPromises);
+      // Sort by date desc
+      return proofs
+        .filter((p): p is PrivatePaymentProof => p !== null)
+        .sort((a, b) => b.createdAt - a.createdAt);
+        
+    } catch (error) {
+      console.error('Failed to get user proofs:', error);
+      return [];
+    }
+  }, [getReadContract, getPrivateProof]);
 
   return {
     // Legacy
@@ -502,6 +580,7 @@ export function useVerifierContract() {
     createPrivateProof,
     verifyCommitment,
     getPrivateProof,
+    getUserProofs,
     // Utilities
     isReady: isConnected && !!CONTRACT_ADDRESS,
     contractAddress: CONTRACT_ADDRESS,

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { fetchTransaction, TransactionData, CHAINS, CHAIN_CATEGORIES, getChainById } from '@/lib/chains';
 import { useVerifierContract, DisclosureLevel } from '@/lib/contract';
+import { getProofSecrets } from '@/lib/crypto';
 import { useStarknet } from '@/lib/starknet';
 import Link from 'next/link';
 
@@ -151,6 +152,11 @@ function GenerateProofContent() {
                 txHash = result.txHash;
                 console.log('Private proof created with Pedersen commitment');
                 console.log('Your secrets are stored locally and never sent to the blockchain');
+
+                // Use the returned proofId (commitment)
+                setProofId(result.proofId);
+                setStep('complete');
+                return; // Early return to skip legacy flow logic
             } else {
                 // Legacy mode (non-private)
                 txHash = await createProof({
@@ -158,12 +164,17 @@ function GenerateProofContent() {
                     minAmount: amount,
                     recipientHash: transaction.to[0] || '0x0',
                 });
+                // Legacy Proof ID is separate from TxHash but for now let's assume...
+                // Wait, legacy createProof returns txHash.
+                // The contract generates an ID. We don't know it easily without parsing logs.
+                // But legacy features are deprecated anyway.
             }
 
             if (!txHash) {
                 throw new Error('Failed to create proof');
             }
 
+            // For legacy, we might still set txHash as ID if that's how it worked before
             setProofId(txHash);
             setStep('complete');
         } catch (err: unknown) {
@@ -386,8 +397,8 @@ function GenerateProofContent() {
                                         <button
                                             onClick={() => setDisclosureLevel(DisclosureLevel.PRIVATE)}
                                             className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.PRIVATE
-                                                    ? 'bg-[#f97316] font-bold'
-                                                    : 'bg-white hover:bg-[#fde047]'
+                                                ? 'bg-[#f97316] font-bold'
+                                                : 'bg-white hover:bg-[#fde047]'
                                                 }`}
                                         >
                                             <div className="text-lg mb-1">🔐</div>
@@ -397,8 +408,8 @@ function GenerateProofContent() {
                                         <button
                                             onClick={() => setDisclosureLevel(DisclosureLevel.AMOUNT)}
                                             className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.AMOUNT
-                                                    ? 'bg-[#f97316] font-bold'
-                                                    : 'bg-white hover:bg-[#fde047]'
+                                                ? 'bg-[#f97316] font-bold'
+                                                : 'bg-white hover:bg-[#fde047]'
                                                 }`}
                                         >
                                             <div className="text-lg mb-1">💰</div>
@@ -408,8 +419,8 @@ function GenerateProofContent() {
                                         <button
                                             onClick={() => setDisclosureLevel(DisclosureLevel.FULL)}
                                             className={`p-2 border-2 border-[#0a0a0a] text-center transition-colors ${disclosureLevel === DisclosureLevel.FULL
-                                                    ? 'bg-[#f97316] font-bold'
-                                                    : 'bg-white hover:bg-[#fde047]'
+                                                ? 'bg-[#f97316] font-bold'
+                                                : 'bg-white hover:bg-[#fde047]'
                                                 }`}
                                         >
                                             <div className="text-lg mb-1">📋</div>
@@ -504,13 +515,21 @@ function GenerateProofContent() {
 
                         <div className="flex flex-col gap-4">
                             <button
-                                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}`)}
+                                onClick={() => {
+                                    const secrets = usePrivacyMode && proofId ? getProofSecrets(proofId) : null;
+                                    const secretParams = secrets ? `&secret=${secrets.secret}&nonce=${secrets.nonce}&recipient=${secrets.recipientHash}` : '';
+                                    navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}`);
+                                }}
                                 className="btn-primary"
                             >
                                 Copy Shareable Link
                             </button>
                             <Link
-                                href={`/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}`}
+                                href={(function () {
+                                    const secrets = usePrivacyMode && proofId ? getProofSecrets(proofId) : null;
+                                    const secretParams = secrets ? `&secret=${secrets.secret}&nonce=${secrets.nonce}&recipient=${secrets.recipientHash}` : '';
+                                    return `/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}`;
+                                })()}
                                 className="btn-outline text-center"
                             >
                                 View Proof

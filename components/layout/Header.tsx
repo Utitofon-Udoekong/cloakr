@@ -43,6 +43,9 @@ export function Header() {
 
                     {/* Center Navigation */}
                     <div className="hidden md:flex items-center gap-1 text-sm font-semibold uppercase tracking-wide">
+                        <Link href="/dashboard" className="px-4 py-2 hover:bg-[#fde047] transition-all border-2 border-transparent hover:border-[#0a0a0a]">
+                            Dashboard
+                        </Link>
                         <Link href="#how-it-works" className="px-4 py-2 hover:bg-[#fde047] transition-all border-2 border-transparent hover:border-[#0a0a0a]">
                             How it Works
                         </Link>
@@ -109,6 +112,13 @@ export function Header() {
                     </div>
 
                     <nav className="flex flex-col gap-3 flex-1">
+                        <Link
+                            href="/dashboard"
+                            onClick={closeMobileMenu}
+                            className="px-4 py-3 border-3 border-[#0a0a0a] font-bold uppercase shadow-[3px_3px_0px_#0a0a0a] hover:bg-[#fde047] transition-colors"
+                        >
+                            Dashboard
+                        </Link>
                         <Link
                             href="#how-it-works"
                             onClick={closeMobileMenu}

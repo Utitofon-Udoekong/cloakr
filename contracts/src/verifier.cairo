@@ -3,6 +3,7 @@ use cloakr_contracts::types::{
     PrivatePaymentProof, PrivateProofInput, VerificationInput, VerificationResult,
     DisclosureLevel
 };
+use starknet::ContractAddress;
 
 // ============================================
 // LEGACY INTERFACE (backward compatibility)
@@ -42,6 +43,12 @@ pub trait IPrivatePaymentVerifier<TContractState> {
     
     /// Get total number of private proofs
     fn get_private_proof_count(self: @TContractState) -> u256;
+
+    /// Get total number of proofs for a specific user
+    fn get_user_proof_count(self: @TContractState, user: ContractAddress) -> u64;
+
+    /// Get a user's proof ID by index
+    fn get_user_proof_at(self: @TContractState, user: ContractAddress, index: u64) -> felt252;
 }
 
 #[starknet::contract]
@@ -66,6 +73,10 @@ pub mod PaymentProofVerifier {
         // Privacy-preserving storage
         private_proofs: Map<felt252, PrivatePaymentProof>,
         private_proof_count: u256,
+        
+        // User tracking
+        user_proofs: Map<(ContractAddress, u64), felt252>, // (user, index) -> proof_id
+        user_proof_count: Map<ContractAddress, u64>,      // user -> count
     }
 
     #[event]
@@ -172,10 +183,10 @@ pub mod PaymentProofVerifier {
         fn create_private_proof(ref self: ContractState, input: PrivateProofInput) -> felt252 {
             let caller = get_caller_address();
             let timestamp = get_block_timestamp();
-            
-            // Generate unique proof ID
             let count = self.private_proof_count.read();
-            let proof_id: felt252 = (count + 1).try_into().unwrap();
+            
+            // Use commitment as Unique ID
+            let proof_id = input.commitment;
             
             // Validate disclosure level
             assert(
@@ -197,6 +208,11 @@ pub mod PaymentProofVerifier {
             // Store proof
             self.private_proofs.entry(proof_id).write(proof);
             self.private_proof_count.write(count + 1);
+            
+            // Track per-user
+            let user_count = self.user_proof_count.entry(caller).read();
+            self.user_proofs.entry((caller, user_count)).write(proof_id);
+            self.user_proof_count.entry(caller).write(user_count + 1);
             
             // Emit event - notice NO sensitive data is revealed
             self.emit(PrivateProofCreated {
@@ -251,6 +267,14 @@ pub mod PaymentProofVerifier {
         /// Get total count of private proofs
         fn get_private_proof_count(self: @ContractState) -> u256 {
             self.private_proof_count.read()
+        }
+
+        fn get_user_proof_count(self: @ContractState, user: ContractAddress) -> u64 {
+            self.user_proof_count.entry(user).read()
+        }
+
+        fn get_user_proof_at(self: @ContractState, user: ContractAddress, index: u64) -> felt252 {
+            self.user_proofs.entry((user, index)).read()
         }
     }
 }
