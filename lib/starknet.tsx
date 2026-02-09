@@ -41,14 +41,31 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
     const [isConnecting, setIsConnecting] = useState(false);
     const [provider] = useState(() => new RpcProvider({ nodeUrl: RPC_URL }));
 
+    const [snackbarConfig, setSnackbarConfig] = useState({ isOpen: false, message: '' });
+
+    // Auto-dismiss snackbar
+    useEffect(() => {
+        if (snackbarConfig.isOpen) {
+            const timer = setTimeout(() => {
+                setSnackbarConfig(prev => ({ ...prev, isOpen: false }));
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [snackbarConfig.isOpen]);
+
     const connectWallet = useCallback(async () => {
         setIsConnecting(true);
         try {
-            // Try to find available wallet
+            // Try to find available wallet - checking for common injections
+            // Braavos and Argent inject themselves as window.starknet
+            // Ready Wallet also injects.
             const starknet = window.starknet_argentX || window.starknet_braavos || window.starknet;
 
             if (!starknet) {
-                alert('Please install ArgentX or Braavos wallet extension');
+                setSnackbarConfig({
+                    isOpen: true,
+                    message: "Please install Argent, Braavos, or Ready Wallet"
+                });
                 setIsConnecting(false);
                 return;
             }
@@ -114,6 +131,18 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
             }}
         >
             {children}
+            {snackbarConfig.isOpen && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ease-in-out px-6 py-3 bg-[#0a0a0a] border-2 border-white shadow-[4px_4px_0px_white] text-white font-bold uppercase text-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
+                    <span>{snackbarConfig.message}</span>
+                    <button
+                        onClick={() => setSnackbarConfig(prev => ({ ...prev, isOpen: false }))}
+                        className="ml-2 hover:text-[#f97316] font-mono text-lg"
+                    >
+                        ×
+                    </button>
+                    {/* Auto-dismiss logic handled by useEffect if we want, but simple inline component works too for now or we use the imported one */}
+                </div>
+            )}
         </StarknetContext.Provider>
     );
 }
