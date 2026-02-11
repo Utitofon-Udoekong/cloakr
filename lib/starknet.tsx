@@ -15,7 +15,7 @@ interface StarknetContextType {
 
 const StarknetContext = createContext<StarknetContextType | null>(null);
 
-const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_10/82hkNrfu6ZZ8Wms2vr1U331ml3FtS7AZ';
+const RPC_URL = process.env.NEXT_PUBLIC_STARKNET_RPC_URL || 'https://starknet-sepolia.public.blastapi.io/rpc/v0_7';
 
 // Get the starknet window object
 declare global {
@@ -41,23 +41,50 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
     const [isConnecting, setIsConnecting] = useState(false);
     const [provider] = useState(() => new RpcProvider({ nodeUrl: RPC_URL }));
 
+    const [snackbarConfig, setSnackbarConfig] = useState({ isOpen: false, message: '' });
+
+    // Auto-dismiss snackbar
+    useEffect(() => {
+        if (snackbarConfig.isOpen) {
+            const timer = setTimeout(() => {
+                setSnackbarConfig(prev => ({ ...prev, isOpen: false }));
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [snackbarConfig.isOpen]);
+
     const connectWallet = useCallback(async () => {
         setIsConnecting(true);
         try {
-            // Try to find available wallet
+            // Try to find available wallet - checking for common injections
+            // Braavos and Argent inject themselves as window.starknet
+            // Ready Wallet also injects.
             const starknet = window.starknet_argentX || window.starknet_braavos || window.starknet;
 
             if (!starknet) {
-                alert('Please install ArgentX or Braavos wallet extension');
+                setSnackbarConfig({
+                    isOpen: true,
+                    message: "Please install Argent, Braavos, or Ready Wallet"
+                });
+                setIsConnecting(false);
                 return;
             }
 
             // Request connection
-            await starknet.enable({ starknetVersion: 'v5' });
+            // Request connection - try without arguments first for best compatibility
+            const addresses = await starknet.enable();
+            console.log('Wallet enabled, addresses:', addresses);
+
+            // Wait a moment for the wallet to fully initialize
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             if (starknet.isConnected && starknet.account) {
-                setAccount(starknet.account);
-                setAddress(starknet.selectedAddress || null);
+                // Cast to AccountInterface - wallet extensions provide compatible objects
+                setAccount(starknet.account as AccountInterface);
+                setAddress(starknet.selectedAddress || addresses?.[0] || null);
+                console.log('Wallet connected:', starknet.selectedAddress || addresses?.[0]);
+            } else {
+                console.warn('Wallet not connected after enable');
             }
         } catch (error) {
             console.error('Failed to connect wallet:', error);
@@ -104,6 +131,18 @@ export function StarknetProvider({ children }: { children: ReactNode }) {
             }}
         >
             {children}
+            {snackbarConfig.isOpen && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 ease-in-out px-6 py-3 bg-[#0a0a0a] border-2 border-white shadow-[4px_4px_0px_white] text-white font-bold uppercase text-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
+                    <span>{snackbarConfig.message}</span>
+                    <button
+                        onClick={() => setSnackbarConfig(prev => ({ ...prev, isOpen: false }))}
+                        className="ml-2 hover:text-[#f97316] font-mono text-lg"
+                    >
+                        ×
+                    </button>
+                    {/* Auto-dismiss logic handled by useEffect if we want, but simple inline component works too for now or we use the imported one */}
+                </div>
+            )}
         </StarknetContext.Provider>
     );
 }

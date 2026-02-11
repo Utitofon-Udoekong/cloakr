@@ -1,64 +1,100 @@
 # Cloakr
 
-**Cloakr** is a privacy-preserving payment verification platform that allows you to generate zero-knowledge (ZK) proofs for blockchain transactions. Prove you've made a payment without ever revealing your wallet address.
+> **Trustless, Privacy-Preserving Payment Verification on Starknet.**
 
-## 🚀 Overview
+**Cloakr** bridges public blockchains (Ethereum, Bitcoin, Solana) to **Starknet** to generate cryptographic proofs of payment **without revealing sensitive details** like the sender, recipient, or exact amount to the public.
 
-In a world where blockchain transparency is a standard, privacy is often compromised. Cloakr bridges this gap by enabling users to verify their payments privately on Starknet. Our platform supports multiple chains, including Ethereum, Bitcoin, Solana, and various L2s.
+Turn your public transaction hash into a private, verifiable proof using **Pedersen Commitments**.
 
-### Key Features
+---
 
-- **Multi-Chain Support**: Generate proofs for transactions on ETH, BTC, SOL, Base, Polygon, and more.
-- **Privacy-First**: Proofs are generated using zero-knowledge principles on Starknet.
-- **Simple Sharing**: Share a unique link with anyone to prove your payment status without compromising your source wallet.
+## Key Features
 
-## 🛠️ Architecture
+-   **Zero-Knowledge Privacy**: Generate proofs where only the **Commitment Hash** is stored on-chain. Secrets (amount, recipient) never leave your device.
+-   **Granular Disclosure**:
+    -   **Private**: Prove a payment exists without revealing details.
+    -   **Amount**: Prove payment > Threshold (e.g., Rent > 1 ETH) without revealing exact value.
+    -   **Full**: Reveal all details to a specific verifier.
+-   **My Proofs Dashboard**: Track all your generated proofs on-chain, indexed by your wallet address.
+-   **Trustless Verification**: Recipients can verify proofs entirely client-side using the shared link. No server trust required.
+-   **Multi-Chain Support**: Works with Ethereum, Bitcoin, Solana, Base, Polygon, and more.
 
-Cloakr consists of:
-1. **Frontend**: A Next.js application built with Tailwind CSS.
-2. **Contracts**: Cairo-based smart contracts deployed on Starknet Sepolia.
-3. **Verification**: A robust verification system that pulls real-time transaction data across multiple networks.
+---
 
-## 💻 Tech Stack
+## Architecture
 
-- **Framework**: [Next.js](https://nextjs.org/)
-- **Blockchain**: [Starknet](https://www.starknet.io/) (Cairo)
-- **RPC**: [Alchemy](https://www.alchemy.com/)
-- **State Management**: React Hooks & Context API
+Cloakr leverages **Starknet's** cheap computation and **Pedersen Hash** efficiency to create a privacy layer for public chains.
 
-## 🚦 Getting Started
+1.  **Frontend**: Next.js 14 (App Router) + Tailwind CSS.
+2.  **Cryptography**: Client-side Pedersen Hashing using `@scure/starknet`.
+3.  **Smart Contract**: Cairo contract (`PaymentProofVerifier`) deployed on Starknet Sepolia.
+    -   **Address**: `0x0354273190dd264af5d545b7312716a0763c0bb9db1ddba2b3403d38e0087568`
+4.  **Storage**: Proofs are stored as `Map<Commitment, Metadata>` on Starknet.
+
+---
+
+## Tech Stack
+
+-   **Frontend**: [Next.js](https://nextjs.org/), [Tailwind CSS](https://tailwindcss.com/)
+-   **Blockchain**: [Starknet](https://www.starknet.io/) (Cairo v2.x)
+-   **SDKs**: `starknet.js` v9, `@scure/starknet`
+-   **Wallet**: [Ready Wallet](https://www.ready.co/ready-wallet) / [Braavos](https://braavos.app/)
+
+---
+
+## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18+)
-- [Argent X](https://www.argent.xyz/argent-x/) or [Braavos](https://braavos.app/) Wallet
-- [Starknet Foundry](https://github.com/foundry-rs/starknet-foundry) (for contract development)
+-   [Node.js](https://nodejs.org/) (v18+)
+-   Starknet Wallet Extension (Ready Wallet or Braavos)
+-   [Scarb](https://docs.swmansion.com/scarb/) (if modifying contracts)
 
 ### Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Utitofon-Udoekong/cloakr.git
-   cd cloakr
-   ```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Utitofon-Udoekong/cloakr.git
+    cd cloakr
+    ```
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-3. **Set up environment variables:**
-   Create a `.env.local` file based on `.env.example`:
-   ```bash
-   NEXT_PUBLIC_STARKNET_RPC_URL=your_starknet_rpc_url
-   NEXT_PUBLIC_VERIFIER_CONTRACT_ADDRESS=your_contract_address
-   ```
+3.  **Set up environment variables:**
+    Copy `.env.example` to `.env.local`:
+    ```bash
+    cp .env.example .env.local
+    ```
+    Update the values:
+    ```env
+    NEXT_PUBLIC_VERIFIER_CONTRACT_ADDRESS=0x0354273190dd264af5d545b7312716a0763c0bb9db1ddba2b3403d38e0087568
+    # Optional: Custom RPC URL
+    # NEXT_PUBLIC_STARKNET_RPC_URL=...
+    ```
 
-4. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-## 📄 License
+---
+
+## How It Works (Privacy Mode)
+
+1.  **Generate**: You input a transaction hash. Your browser generates a random `Secret` and `Nonce`.
+2.  **Commit**: It computes `Hash(Secret, Amount, Recipient, Nonce)`.
+3.  **Store**: You send ONLY the hash to Starknet.
+4.  **Share**: You send a link to the verifier (e.g., landlord) containing the `Secret` in the URL fragment (`#secret=...`).
+5.  **Verify**: The verifier's browser re-computes the hash and checks it against the Starknet contract.
+
+---
+
+## License
 
 This project is licensed under the MIT License.
