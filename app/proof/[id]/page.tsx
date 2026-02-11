@@ -53,12 +53,13 @@ import { useVerifierContract } from '@/lib/contract';
 function ProofPageContent() {
     const params = useParams();
     const searchParams = useSearchParams();
-    const { getPrivateProof } = useVerifierContract();
+    const { getPrivateProof, contractAddress } = useVerifierContract();
 
     const proofId = params.id as string;
     const chainId = searchParams.get('chain');
     const amountParam = searchParams.get('amount');
     const sourceTxid = searchParams.get('txid');
+    const starknetTx = searchParams.get('starknetTx');
 
     // Secrets for verification
     const secret = searchParams.get('secret');
@@ -75,7 +76,11 @@ function ProofPageContent() {
     const chainConfig = chainId ? getChainById(chainId) : null;
 
     // Starknet explorer URL (Voyager)
-    const starknetExplorerUrl = `https://sepolia.voyager.online/tx/${proofId}`;
+    const starknetExplorerUrl = starknetTx
+        ? `https://sepolia.voyager.online/tx/${starknetTx}`
+        : contractAddress
+            ? `https://sepolia.voyager.online/contract/${contractAddress}`
+            : '#';
 
     // Perform verification
     useEffect(() => {
@@ -281,7 +286,9 @@ function ProofPageContent() {
                         {/* Starknet proof transaction */}
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a]">
                             <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Starknet Proof Transaction</span>
+                                <span className="text-xs font-semibold uppercase text-[#6b6b6b]">
+                                    {starknetTx ? 'Starknet Proof Transaction' : 'Proof Commitment Identifier'}
+                                </span>
                                 <a
                                     href={starknetExplorerUrl}
                                     target="_blank"
@@ -291,7 +298,9 @@ function ProofPageContent() {
                                     View <ExternalLinkIcon />
                                 </a>
                             </div>
-                            <p className="font-mono text-xs mt-1 break-all">{truncateHash(proofId)}</p>
+                            <p className="font-mono text-xs mt-1 break-all">
+                                {starknetTx ? truncateHash(starknetTx) : truncateHash(proofId)}
+                            </p>
                             {onChainProof && (
                                 <div className="mt-2 pt-2 border-t border-gray-200">
                                     <span className="text-[10px] text-[#6b6b6b] uppercase">Commitment Hash</span>
@@ -325,7 +334,7 @@ function ProofPageContent() {
                         className="btn-outline flex items-center justify-center gap-2 px-6"
                     >
                         <ExternalLinkIcon />
-                        View on Starkscan
+                        View on Voyager
                     </a>
                 </div>
 

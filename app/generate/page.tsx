@@ -58,6 +58,7 @@ function GenerateProofContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [proofId, setProofId] = useState<string | null>(null);
+    const [starknetTxHash, setStarknetTxHash] = useState<string | null>(null);
     const [generationError, setGenerationError] = useState('');
     const [disclosureLevel, setDisclosureLevel] = useState<number>(DisclosureLevel.PRIVATE);
     const [usePrivacyMode, setUsePrivacyMode] = useState(true);
@@ -153,8 +154,10 @@ function GenerateProofContent() {
                 console.log('Private proof created with Pedersen commitment');
                 console.log('Your secrets are stored locally and never sent to the blockchain');
 
+
                 // Use the returned proofId (commitment)
                 setProofId(result.proofId);
+                setStarknetTxHash(result.txHash);
                 setStep('complete');
                 return; // Early return to skip legacy flow logic
             } else {
@@ -176,6 +179,7 @@ function GenerateProofContent() {
 
             // For legacy, we might still set txHash as ID if that's how it worked before
             setProofId(txHash);
+            setStarknetTxHash(txHash);
             setStep('complete');
         } catch (err: unknown) {
             console.error('Proof generation error:', err);
@@ -499,7 +503,20 @@ function GenerateProofContent() {
 
                         <div className="p-4 bg-[#fafaf7] border-2 border-[#0a0a0a] mb-4">
                             <span className="text-xs font-semibold uppercase text-[#6b6b6b]">Starknet Transaction</span>
-                            <p className="font-mono text-sm mt-1">{truncateHash(proofId || '')}</p>
+                            <p className="font-mono text-sm mt-1">
+                                {starknetTxHash ? (
+                                    <a
+                                        href={`https://sepolia.voyager.online/tx/${starknetTxHash}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="hover:underline hover:text-[#f97316]"
+                                    >
+                                        {truncateHash(starknetTxHash || '')} ↗
+                                    </a>
+                                ) : (
+                                    truncateHash(proofId || '')
+                                )}
+                            </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -518,7 +535,8 @@ function GenerateProofContent() {
                                 onClick={() => {
                                     const secrets = usePrivacyMode && proofId ? getProofSecrets(proofId) : null;
                                     const secretParams = secrets ? `&secret=${secrets.secret}&nonce=${secrets.nonce}&recipient=${secrets.recipientHash}` : '';
-                                    navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}`);
+                                    const txParam = starknetTxHash ? `&starknetTx=${starknetTxHash}` : '';
+                                    navigator.clipboard.writeText(`${window.location.origin}/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}${txParam}`);
                                 }}
                                 className="btn-primary"
                             >
@@ -528,7 +546,8 @@ function GenerateProofContent() {
                                 href={(function () {
                                     const secrets = usePrivacyMode && proofId ? getProofSecrets(proofId) : null;
                                     const secretParams = secrets ? `&secret=${secrets.secret}&nonce=${secrets.nonce}&recipient=${secrets.recipientHash}` : '';
-                                    return `/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}`;
+                                    const txParam = starknetTxHash ? `&starknetTx=${starknetTxHash}` : '';
+                                    return `/proof/${proofId}?chain=${transaction.chain}&amount=${encodeURIComponent(transaction.amount)}&txid=${encodeURIComponent(transaction.txid)}${secretParams}${txParam}`;
                                 })()}
                                 className="btn-outline text-center"
                             >
